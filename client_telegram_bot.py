@@ -33,9 +33,11 @@ global message_to_send
 global user_logs_json
 global config_settings
 config_settings = {
-    "welome_message": "Hello $username! Welcome to $title",
-    "spam_words": []
+    'welome_message': 'Hello $username! Welcome to $title',
+    'spam_words': []
 }
+print(type(config_settings))
+print(config_settings)
 user_logs_json = {}
 # user logs file
 if not os.path.exists('users_activity.json'):
@@ -46,7 +48,8 @@ if not os.path.exists('users_activity.json'):
 if not os.path.exists('config_file.json'):
     print("creating config file")
     file = open('config_file.json', 'w+')
-    file.write(str(config_settings))
+    r = json.dumps(config_settings)
+    file.write(str(r))
     file.close()
 
 with open('config_file.json', 'r') as infile:
@@ -84,15 +87,16 @@ def welcome(bot, update):
     bot.send_message(chat_id=chat_id, text=text, parse_mode=ParseMode.HTML)
 
 
-def set_welcome_message(bot, update):
+def set_welcome_message(bot, update, args):
     global config_settings
     """
     sets the welcome message
     """
-    new_message = update.message.text
+    print(args)
+    new_message = " ".join(args)
     if new_message:
         config_settings["welome_message"] = new_message
-        with open('users_activity.json', 'w') as infile:
+        with open('config_file.json', 'w') as infile:
             infile.write(json.dumps(config_settings, indent=4))
         bot.send_message(
             chat_id=update.message.chat_id,
@@ -103,25 +107,24 @@ def set_welcome_message(bot, update):
             text="Cannot set empty welcome message!")
 
 
-def add_spam_word(bot, update):
+def add_spam_word(bot, update, args):
     """
     Add new spam word to dictionary
     """
     global config_settings
-    new_spam_word = update.message.text
+    new_spam_word = " ".join(args)
     if new_spam_word:
         spam_list = config_settings["spam_words"]
         spam_list.append(new_spam_word)
         config_settings["spam_words"] = spam_list
-        with open('users_activity.json', 'w') as infile:
+        with open('config_file.json', 'w') as infile:
             infile.write(json.dumps(config_settings, indent=4))
         bot.send_message(
             chat_id=update.message.chat_id,
             text="New spam word succesfully set!")
     else:
         bot.send_message(
-            chat_id=update.message.chat_id,
-            text="Cannot add empty spam word!")
+            chat_id=update.message.chat_id, text="Cannot add empty spam word!")
 
 
 def empty_message(bot, update):
@@ -139,21 +142,24 @@ def empty_message(bot, update):
 def check_spam(bot, update):
     global user_logs_json
     global config_settings
-    matching = ""
     spam_words_list = config_settings["spam_words"]
     print(update.message.text)
     text = update.message.text
     # check if text is a spam
     urls = re.findall('http[s]?://(?:[a-zA-Z]|[0-9]| \
                      [$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', text)
-    matching = [s for s in spam_words_list if text in s]
+    contains_spam = False
+    for letter in text:
+        if letter in " ".join(spam_words_list):
+            contains_spam = True
+
     # check if any spam found
     if urls:
         # delete spam message
         bot.delete_message(
             chat_id=update.message.chat_id,
             message_id=update.message.message_id)
-    elif matching:
+    elif contains_spam:
         # delete spam message
         bot.delete_message(
             chat_id=update.message.chat_id,
@@ -257,8 +263,9 @@ spam_handler = MessageHandler(Filters.text, check_spam)
 set_handler = CommandHandler(
     "set", set_timer, pass_args=True, pass_job_queue=True, pass_chat_data=True)
 active_users_handler = CommandHandler("mostactive", check_active_users)
-set_spam_handler = CommandHandler("addspam", add_spam_word)
-set_welcome_handler = CommandHandler("setwelcome", set_welcome_message)
+set_spam_handler = CommandHandler("addspam", add_spam_word, pass_args=True)
+set_welcome_handler = CommandHandler(
+    "setwelcome", set_welcome_message, pass_args=True)
 dispatcher.add_handler(welcome_handler)
 dispatcher.add_handler(spam_handler)
 dispatcher.add_handler(set_handler)
