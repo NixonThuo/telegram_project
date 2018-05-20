@@ -127,6 +127,47 @@ def add_spam_word(bot, update, args):
             chat_id=update.message.chat_id, text="Cannot add empty spam word!")
 
 
+def remove_spam_word(bot, update, args):
+    """
+    Remove spam word from dictionary
+    """
+    global config_settings
+    spam_word = " ".join(args)
+    if spam_word:
+        spam_list = config_settings["spam_words"]
+        spam_list.remove(spam_word)
+        config_settings["spam_words"] = spam_list
+        with open('config_file.json', 'w') as infile:
+            infile.write(json.dumps(config_settings, indent=4))
+        bot.send_message(
+            chat_id=update.message.chat_id,
+            text="Spam word removed from dictionary!")
+    else:
+        bot.send_message(
+            chat_id=update.message.chat_id,
+            text="Cannot remove empty spam word!")
+
+
+def list_spam_words(bot, update):
+    global config_settings
+    spam_list = config_settings["spam_words"]
+    spam_string = " ".join(spam_list)
+    bot.send_message(chat_id=update.message.chat_id, text=spam_string)
+
+
+def help_menu(bot, update):
+    """
+    Displays the help menu
+    """
+    menu_message = """ BOT HELP MENU:
+    /addspam <spamword> - This command helps to add a new spam word into the bots memory
+    /setwelcome <welcomemessage> - This command allows you to customize the welcome message. Your message should be like this 'Hello $username! Welcome to $title'
+    /mostactive - This command will give you the list of most active users in the group
+    /set <seconds> <message> - This command will allows you to set a message to be displayed after the seconds set
+    """
+    bot.send_message(chat_id=update.message.chat_id, text=menu_message)
+
+
 def empty_message(bot, update):
     """
     Empty messages could be status messages, so we check them if there is a new
@@ -149,10 +190,11 @@ def check_spam(bot, update):
     urls = re.findall('http[s]?://(?:[a-zA-Z]|[0-9]| \
                      [$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', text)
     contains_spam = False
-    for letter in text:
+    for letter in text.split():
         if letter in " ".join(spam_words_list):
             contains_spam = True
-
+            if contains_spam:
+                print(letter)
     # check if any spam found
     if urls:
         # delete spam message
@@ -264,14 +306,20 @@ set_handler = CommandHandler(
     "set", set_timer, pass_args=True, pass_job_queue=True, pass_chat_data=True)
 active_users_handler = CommandHandler("mostactive", check_active_users)
 set_spam_handler = CommandHandler("addspam", add_spam_word, pass_args=True)
+del_spam_handler = CommandHandler("delspam", remove_spam_word, pass_args=True)
 set_welcome_handler = CommandHandler(
     "setwelcome", set_welcome_message, pass_args=True)
+help_menu_handler = CommandHandler("botmenu", help_menu)
+list_spam_handler = CommandHandler("listspamwords", list_spam_words)
 dispatcher.add_handler(welcome_handler)
 dispatcher.add_handler(spam_handler)
 dispatcher.add_handler(set_handler)
 dispatcher.add_handler(active_users_handler)
 dispatcher.add_handler(set_spam_handler)
 dispatcher.add_handler(set_welcome_handler)
+dispatcher.add_handler(help_menu_handler)
+dispatcher.add_handler(del_spam_handler)
+dispatcher.add_handler(list_spam_handler)
 dispatcher.add_handler(CommandHandler("unset", unset, pass_chat_data=True))
 # log all errors
 dispatcher.add_error_handler(error)
