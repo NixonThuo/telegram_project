@@ -164,6 +164,8 @@ def help_menu(bot, update):
     /setwelcome <welcomemessage> - This command allows you to customize the welcome message. Your message should be like this 'Hello $username! Welcome to $title'
     /mostactive - This command will give you the list of most active users in the group
     /set <seconds> <message> - This command will allows you to set a message to be displayed after the seconds set
+    /listspamwords - shows the words that have been added to the spam dictionary
+    /delspam <spamword> - deletes a spam word from the spam dictionary
     """
     bot.send_message(chat_id=update.message.chat_id, text=menu_message)
 
