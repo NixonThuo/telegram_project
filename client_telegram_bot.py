@@ -312,7 +312,6 @@ def unset(bot, update, chat_data):
 
         update.message.reply_text('Timer successfully unset!')
 
-
     def error(bot, update, error):
         """Log Errors caused by Updates."""
         logger.warning('Update "%s" caused error "%s"', update, error)
