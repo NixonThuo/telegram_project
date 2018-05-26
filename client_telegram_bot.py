@@ -10,9 +10,10 @@ from telegram import ParseMode
 from telegram.ext import MessageHandler, CommandHandler, Filters
 
 # Configuration
-BOTNAME = 'nickmillbot'
-TOKEN = '581070543:AAHMQr4wMon0GBylJGfMBifFCfQqKYvCTI4'
-BOTAN_TOKEN = 'BOTANTOKEN'
+BOTNAME = ''
+TOKEN = ''
+# BOTAN_TOKEN = 'BOTANTOKEN'
+DEFAULTADMINID = 268241452
 
 # Set up logging
 root = logging.getLogger()
@@ -35,7 +36,7 @@ global config_settings
 config_settings = {
     'welome_message': 'Hello $username! Welcome to $title',
     'spam_words': [],
-    'bot_admins': [268241452]
+    'bot_admins': [DEFAULTADMINID]
 }
 print(type(config_settings))
 print(config_settings)
@@ -65,10 +66,62 @@ with open('users_activity.json', 'r') as infile:
 
 
 def check_if_bot_admin(user_id):
-    if user_id in config_settings['bot_admins']:
+    if user_id in config_settings["bot_admins"]:
         return True
     else:
         return False
+
+
+def get_my_id(bot, update):
+    bot.send_message(
+        chat_id=update.message.chat_id,
+        text=update.message.from_user.id)
+
+
+def add_bot_admin(bot, update, args):
+    """
+    add bot admin
+    """
+    global config_settings
+    if check_if_bot_admin(update.message.from_user.id):
+        user_id = args[0]
+        if int(user_id) not in config_settings["bot_admins"]:
+            config_settings["bot_admins"].append(int(user_id))
+            with open('config_file.json', 'w') as infile:
+                infile.write(json.dumps(config_settings, indent=4))
+            bot.send_message(
+                chat_id=update.message.chat_id,
+                text="new bot admin succesfully added")
+
+
+def list_bot_admins(bot, update):
+    global config_settings
+    if check_if_bot_admin(update.message.from_user.id):
+        bot_message = ""
+        for admin_id in config_settings["bot_admins"]:
+            bot_message += str(
+                bot.getChatMember(update.message.chat_id, admin_id)
+                .user.first_name) + "  " + str(
+                    bot.getChatMember(
+                        update.message.chat_id,
+                        admin_id).user.last_name) + " " + str(admin_id) + '\n'
+        bot.send_message(
+            chat_id=update.message.chat_id,
+            text=bot_message)
+
+
+def del_bot_admin(bot, update, args):
+    global config_settings
+    if check_if_bot_admin(update.message.from_user.id):
+        del_admin_id = args[0]
+        if int(del_admin_id) in config_settings["bot_admins"]:
+            bot_admin_list = config_settings["bot_admins"]
+            bot_admin_list.remove(int(del_admin_id))
+            with open('config_file.json', 'w') as infile:
+                infile.write(json.dumps(config_settings, indent=4))
+            bot.send_message(
+                chat_id=update.message.chat_id,
+                text="bot admin succesfully deleted")
 
 
 # Welcome a user to the chat
@@ -134,7 +187,8 @@ def add_spam_word(bot, update, args):
                 text="New spam word succesfully set!")
         else:
             bot.send_message(
-                chat_id=update.message.chat_id, text="Cannot add empty spam word!")
+                chat_id=update.message.chat_id,
+                text="Cannot add empty spam word!")
 
 
 def remove_spam_word(bot, update, args):
@@ -179,6 +233,10 @@ def help_menu(bot, update):
         /set <seconds> <message> - This command will allows you to set a message to be displayed after the seconds set
         /listspamwords - shows the words that have been added to the spam dictionary
         /delspam <spamword> - deletes a spam word from the spam dictionary
+        /addbotadmin <userid> - adds a user wh can interact with the bot
+        /listbotadmins - list users who have right to interact with the bot with their user IDs
+        /delbotadmin <userID> - deletes a user from the lis of users who can interact with the bot
+        /getmyid - tool to show your user ID
         """
         bot.send_message(chat_id=update.message.chat_id, text=menu_message)
 
@@ -265,8 +323,9 @@ def check_active_users(bot, update):
                     users_message += str(
                         bot.getChatMember(update.message.chat_id, user_id[0])
                         .user.first_name) + "  " + str(
-                            bot.getChatMember(update.message.chat_id,
-                                              user_id[0]).user.last_name) + '\n'
+                            bot.getChatMember(
+                                update.message.chat_id,
+                                user_id[0]).user.last_name) + '\n'
         bot.send_message(chat_id=update.message.chat_id, text=users_message)
 
 
@@ -312,9 +371,10 @@ def unset(bot, update, chat_data):
 
         update.message.reply_text('Timer successfully unset!')
 
-    def error(bot, update, error):
-        """Log Errors caused by Updates."""
-        logger.warning('Update "%s" caused error "%s"', update, error)
+
+def error(bot, update, error):
+    """Log Errors caused by Updates."""
+    logger.warning('Update "%s" caused error "%s"', update, error)
 
 
 welcome_handler = MessageHandler(Filters.status_update, empty_message)
@@ -328,6 +388,10 @@ set_welcome_handler = CommandHandler(
     "setwelcome", set_welcome_message, pass_args=True)
 help_menu_handler = CommandHandler("botmenu", help_menu)
 list_spam_handler = CommandHandler("listspamwords", list_spam_words)
+add_bot_admin_handler = CommandHandler("addbotadmin", add_bot_admin, pass_args=True)
+list_bot_admins_handler = CommandHandler("listbotadmins", list_bot_admins)
+del_bot_admin = CommandHandler("delbotadmin", del_bot_admin, pass_args=True)
+get_my_id_handler = CommandHandler("getmyid", get_my_id)
 dispatcher.add_handler(welcome_handler)
 dispatcher.add_handler(spam_handler)
 dispatcher.add_handler(set_handler)
@@ -337,6 +401,10 @@ dispatcher.add_handler(set_welcome_handler)
 dispatcher.add_handler(help_menu_handler)
 dispatcher.add_handler(del_spam_handler)
 dispatcher.add_handler(list_spam_handler)
+dispatcher.add_handler(add_bot_admin_handler)
+dispatcher.add_handler(list_bot_admins_handler)
+dispatcher.add_handler(del_bot_admin)
+dispatcher.add_handler(get_my_id_handler)
 dispatcher.add_handler(CommandHandler("unset", unset, pass_chat_data=True))
 # log all errors
 dispatcher.add_error_handler(error)
