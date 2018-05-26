@@ -11,7 +11,7 @@ from telegram import InlineQueryResultArticle, InputTextMessageContent
 logging.basicConfig(format='%(asctime)s - %(name)s  \
                     - %(levelname)s - %(message)s',
                     level=logging.INFO)
-updater = Updater(token='581070543:AAHMQr4wMon0GBylJGfMBifFCfQqKYvCTI4')
+updater = Updater(token='')
 dispatcher = updater.dispatcher
 
 
