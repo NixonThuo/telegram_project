@@ -13,7 +13,7 @@ from telegram.ext import MessageHandler, CommandHandler, Filters
 
 # Configuration
 BOTNAME = ''
-TOKEN = '581070543:AAHMQr4wMon0GBylJGfMBifFCfQqKYvCTI4'
+TOKEN = '19190:581070543:AAHMQr4wMon0GBylJGfMBifFCfQqKYvCTI4:2019'
 # BOTAN_TOKEN = 'BOTANTOKEN'
 DEFAULTADMINID = 268241452
 
